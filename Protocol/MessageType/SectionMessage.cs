@@ -25,15 +25,27 @@ namespace ViciNet.Protocol.MessageType
                     var encoded = message.Encode();
                     writer.Write(encoded);
                 }
+
                 writer.Write(SectionEnd);
             });
         }
 
         public override string ToString()
         {
-            var section = _messages.Length > 0
-                ? _messages.Select(msg => msg.ToString()).Aggregate((m1, m2) => $"{m1},{m2}")
-                : null;
+            string section;
+            switch (_messages.Length)
+            {
+                case 0:
+                    section = null;
+                    break;
+                case 1:
+                    section = _messages[0].ToString();
+                    break;
+                default:
+                    section = _messages.Select(msg => msg.ToString()).Aggregate((m1, m2) => $"{m1},{m2}");
+                    break;
+            }
+
             return $"\"{_key}\":{{{section}}}";
         }
     }

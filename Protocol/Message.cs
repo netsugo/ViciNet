@@ -36,7 +36,7 @@ namespace ViciNet.Protocol
                     var (message, length) = ReadMessage(reader, type);
                     messages.Add(message);
                     count += length;
-                };
+                }
 
                 return messages.ToArray();
             });

@@ -25,13 +25,27 @@ namespace ViciNet.Protocol.MessageType
                     writer.Write(ListItem);
                     WriteValue(writer, value);
                 }
+
                 writer.Write(ListEnd);
             });
         }
 
         public override string ToString()
         {
-            var values = _values.Select(value => $"\"{value}\"").Aggregate((s1, s2) => $"{s1},{s2}");
+            string values;
+            switch (_values.Length)
+            {
+                case 0:
+                    values = null;
+                    break;
+                case 1:
+                    values = _values[0];
+                    break;
+                default:
+                    values = _values.Select(value => $"\"{value}\"").Aggregate((s1, s2) => $"{s1},{s2}");
+                    break;
+            }
+
             return $"\"{_key}\" = [{values}]";
         }
     }
