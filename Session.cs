@@ -121,6 +121,47 @@ namespace ViciNet
                 messagesList.Add(response.Messages);
             }
         }
+        
+        public Message[] Request(Command command, params Message[] messages)
+        {
+            return Request(command.GetName(), messages);
+        }
+
+        public Message[][] StreamedRequest(Command command, StreamEvent eventStreamType, params Message[] messages)
+        {
+            return StreamedRequest(command.GetName(), eventStreamType.GetName(), messages);
+        }
+
+        public Message[][] StreamedRequest(Command command, params Message[] messages)
+        {
+            return CommandToEventTable.TryGetValue(command, out var streamEvent)
+                ? StreamedRequest(command, streamEvent, messages)
+                : throw new ArgumentException($"\"{command.GetName()}\" isn't stream command.");
+        }
+        
+        private static readonly Dictionary<Command, StreamEvent> CommandToEventTable = new Dictionary<Command, StreamEvent>
+        {
+            {
+                Command.ListSas,
+                StreamEvent.ListSa
+            },
+            {
+                Command.ListPolicies,
+                StreamEvent.ListPolicy
+            },
+            {
+                Command.ListConns,
+                StreamEvent.ListConn
+            },
+            {
+                Command.ListCerts,
+                StreamEvent.ListCert
+            },
+            {
+                Command.ListAuthorities,
+                StreamEvent.ListAuthority
+            }
+        };
 
         public void Dispose()
         {
