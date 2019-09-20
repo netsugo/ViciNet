@@ -4,6 +4,7 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using ViciNet.Protocol;
+using ViciNet.RequestAttribute;
 
 namespace ViciNet
 {
@@ -97,8 +98,6 @@ namespace ViciNet
 
         public Message[][] StreamedRequest(string command, string eventStreamType, params Message[] messages)
         {
-            Console.WriteLine("command:{0}", command);
-            Console.WriteLine("event:{0}", eventStreamType);
             var messagesList = new List<Message[]>();
             var packet = new Packet(CmdRequest, command, messages);
             RegisterEvent(eventStreamType);
