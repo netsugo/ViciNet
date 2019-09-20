@@ -1,0 +1,42 @@
+namespace ViciNet.RequestAttribute
+{
+    public enum Command
+    {
+        [RequestName("version")] Version,
+        [RequestName("stats")] Stats,
+        [RequestName("reload-settings")] ReloadSettings,
+        [RequestName("initiate")] Initiate,
+        [RequestName("terminate")] Terminate,
+        [RequestName("rekey")] ReKey,
+        [RequestName("redirect")] Redirect,
+        [RequestName("install")] Install,
+        [RequestName("uninstall")] Uninstall,
+        [RequestName("list-sas")] ListSas,
+        [RequestName("list-policies")] ListPolicies,
+        [RequestName("list-conns")] ListConns,
+        [RequestName("get-conns")] GetConns,
+        [RequestName("list-certs")] ListCerts,
+        [RequestName("list-authorities")] ListAuthorities,
+        [RequestName("get-authorities")] GetAuthorities,
+        [RequestName("load-conn")] LoadConn,
+        [RequestName("unload-conn")] UnloadConn,
+        [RequestName("load-cert")] LoadCert,
+        [RequestName("load-key")] LoadKey,
+        [RequestName("unload-key")] UnloadKey,
+        [RequestName("get-keys")] GetKeys,
+        [RequestName("load-token")] LoadToken,
+        [RequestName("load-shared")] LoadShared,
+        [RequestName("unload-shared")] UnloadShared,
+        [RequestName("get-shared")] GetShared,
+        [RequestName("flush-certs")] FlushCerts,
+        [RequestName("clear-creds")] ClearCreds,
+        [RequestName("load-authority")] LoadAuthority,
+        [RequestName("unload-authority")] UnloadAuthority,
+        [RequestName("load-pool")] LoadPool,
+        [RequestName("unload-pool")] UnloadPool,
+        [RequestName("get-pools")] GetPools,
+        [RequestName("get-algorithms")] GetAlgorithms,
+        [RequestName("get-counters")] GetCounters,
+        [RequestName("reset-counters")] ResetCounters
+    }
+}
