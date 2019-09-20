@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -66,6 +67,59 @@ namespace ViciNet
             }
 
             return response.Messages;
+        }
+        
+        private void RegisterEvent(string eventStreamType)
+        {
+            RegisterUnregister(eventStreamType, EventRegister);
+        }
+
+        private void UnregisterEvent(string eventStreamType)
+        {
+            RegisterUnregister(eventStreamType, EventUnregister);
+        }
+
+        private void RegisterUnregister(string eventStreamType, byte registerType)
+        {
+            var packet = new Packet(registerType, eventStreamType);
+            var response = Communicate(packet);
+
+            if (response.PacketType == EventUnknown)
+            {
+                throw new InvalidDataException();
+            }
+
+            if (response.PacketType != EventConfirm)
+            {
+                throw new InvalidDataException();
+            }
+        }
+
+        public Message[][] StreamedRequest(string command, string eventStreamType, params Message[] messages)
+        {
+            Console.WriteLine("command:{0}", command);
+            Console.WriteLine("event:{0}", eventStreamType);
+            var messagesList = new List<Message[]>();
+            var packet = new Packet(CmdRequest, command, messages);
+            RegisterEvent(eventStreamType);
+            var sendCode = _transport.Send(packet);
+            while (true)
+            {
+                var response = _transport.Receive();
+                if (response.PacketType != Event)
+                {
+                    UnregisterEvent(eventStreamType);
+                    if (response.PacketType != CmdResponse)
+                    {
+                        throw new InvalidDataException();
+                    }
+
+                    messagesList.Add(response.Messages);
+                    return messagesList.ToArray();
+                }
+
+                messagesList.Add(response.Messages);
+            }
         }
 
         public void Dispose()
