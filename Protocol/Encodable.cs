@@ -3,7 +3,7 @@ using System.IO;
 
 namespace ViciNet.Protocol
 {
-    public abstract class Encodable : IEncodable
+    public abstract class Encodable
     {
         public abstract byte[] Encode();
 
