@@ -37,7 +37,7 @@ namespace ViciNet.Protocol
             });
         }
 
-        public static Tuple<byte, string, Message[]> ReadPacket(byte[] data)
+        private static Tuple<byte, string, Message[]> ReadPacket(byte[] data)
         {
             return ReadData(data, reader =>
             {
