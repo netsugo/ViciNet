@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
-
-using ViciNet.Protocol.MessageType;
 
 namespace ViciNet.Protocol
 {
@@ -11,14 +10,19 @@ namespace ViciNet.Protocol
     {
         // Begin a new section having a name
         protected const byte SectionStart = 1;
+
         // End a previously started section
         protected const byte SectionEnd = 2;
+
         // Define a value for a named key in the current section
         protected const byte KeyValue = 3;
+
         // Begin a name list for list items
         protected const byte ListStart = 4;
+
         // Define an unnamed item value in the current list
         protected const byte ListItem = 5;
+
         // End a previously started list
         protected const byte ListEnd = 6;
 
@@ -67,7 +71,7 @@ namespace ViciNet.Protocol
                 case KeyValue:
                     return ReadKeyValue(reader);
                 case ListStart:
-                    return ReadKeyValues(reader);
+                    return ReadKeyArray(reader);
                 case SectionStart:
                     return ReadSection(reader);
                 default:
@@ -86,13 +90,13 @@ namespace ViciNet.Protocol
             );
         }
 
-        private static Tuple<Message, int> ReadKeyValues(BinaryReader reader)
+        private static Tuple<Message, int> ReadKeyArray(BinaryReader reader)
         {
             var (key, keyCount) = ReadKey(reader);
-            var (values, count) = ReadValues(reader);
+            var (values, count) = ReadArray(reader);
 
             return new Tuple<Message, int>(
-                new KeyValuesMessage(key, values),
+                new KeyArrayMessage(key, values),
                 keyCount + count
             );
         }
@@ -100,7 +104,7 @@ namespace ViciNet.Protocol
         private static Tuple<Message, int> ReadSection(BinaryReader reader)
         {
             var (key, keyCount) = ReadKey(reader);
-            var (section, count) = ReadSection(reader);
+            var (section, count) = ReadMessages(reader);
 
             return new Tuple<Message, int>(
                 new SectionMessage(key, section),
@@ -131,7 +135,7 @@ namespace ViciNet.Protocol
             );
         }
 
-        private static Tuple<string[], int> ReadValues(BinaryReader reader)
+        private static Tuple<string[], int> ReadArray(BinaryReader reader)
         {
             var list = new List<string>();
             var count = 0;
@@ -179,6 +183,131 @@ namespace ViciNet.Protocol
                 list.Add(message);
                 count += len;
             }
+        }
+    }
+
+
+    public class KeyValueMessage : Message
+    {
+        public string Key { get; }
+        public string Value { get; }
+
+        public KeyValueMessage(string key, string value)
+        {
+            Key = key;
+            Value = value;
+        }
+
+        public override byte[] Encode()
+        {
+            return Encode(KeyValue, writer =>
+            {
+                WriteKey(writer, Key);
+                WriteValue(writer, Value);
+            });
+        }
+
+        public override string ToString()
+        {
+            return $"\"{Key}\":\"{Value}\"";
+        }
+    }
+
+
+    public class KeyArrayMessage : Message
+    {
+        public string Key;
+        public string[] Values;
+
+        public KeyArrayMessage(string key, params string[] values)
+        {
+            Key = key;
+            Values = values;
+        }
+
+        public override byte[] Encode()
+        {
+            return Encode(ListStart, writer =>
+            {
+                // key length header: 1byte
+                WriteKey(writer, Key);
+                foreach (var value in Values)
+                {
+                    // message type: 1byte
+                    writer.Write(ListItem);
+                    WriteValue(writer, value);
+                }
+
+                writer.Write(ListEnd);
+            });
+        }
+
+        public override string ToString()
+        {
+            string values;
+            switch (Values.Length)
+            {
+                case 0:
+                    values = null;
+                    break;
+                case 1:
+                    values = "\"" + Values[0] + "\"";
+                    break;
+                default:
+                    values = Values.Select(value => $"\"{value}\"").Aggregate((s1, s2) => $"{s1},{s2}");
+                    break;
+            }
+
+            return $"\"{Key}\":[{values}]";
+        }
+    }
+
+
+    public class SectionMessage : Message
+    {
+        private readonly string _key;
+        private readonly Message[] _messages;
+
+        public SectionMessage(string key, params Message[] section)
+        {
+            _key = key;
+            _messages = section;
+        }
+
+        public override byte[] Encode()
+        {
+            return Encode(SectionStart, writer =>
+            {
+                // key length header: 1byte
+                WriteKey(writer, _key);
+                foreach (var message in _messages)
+                {
+                    // message type: 1byte
+                    var encoded = message.Encode();
+                    writer.Write(encoded);
+                }
+
+                writer.Write(SectionEnd);
+            });
+        }
+
+        public override string ToString()
+        {
+            string section;
+            switch (_messages.Length)
+            {
+                case 0:
+                    section = null;
+                    break;
+                case 1:
+                    section = _messages[0].ToString();
+                    break;
+                default:
+                    section = _messages.Select(msg => msg.ToString()).Aggregate((m1, m2) => $"{m1},{m2}");
+                    break;
+            }
+
+            return $"\"{_key}\":{{{section}}}";
         }
     }
 }
