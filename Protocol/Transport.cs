@@ -42,24 +42,50 @@ namespace ViciNet.Protocol
             }
         }
 
-        public Packet Receive()
+        private int ReceiveHeader()
         {
-            var buffer = new byte[MaxSegment];
-            var result = _socket.Receive(buffer);
-            return ReadPacket(buffer);
+            const int HEADER_SIZE = 4;
+            var headerBuffer = new byte[HEADER_SIZE];
+            var result = _socket.Receive(headerBuffer, 0, HEADER_SIZE, SocketFlags.None);
+
+            using (var memoryBuffer = new MemoryStream(headerBuffer))
+            {
+                using (var reader = new BinaryReader(memoryBuffer))
+                {
+                    var data = reader.ReadInt32();
+                    return IPAddress.NetworkToHostOrder(data);
+                }
+            }
         }
 
-        private Packet ReadPacket(byte[] buffer)
+        private byte[] ReceiveData(int length)
         {
+            var buffer = new byte[MaxSegment];
+            var sum = 0;
+            while (sum < length)
+            {
+                sum += _socket.Receive(buffer, sum, length, SocketFlags.None);
+            }
+
+            if (sum > length)
+            {
+                throw new InvalidDataException($"invalid size: {sum} (expected:{length})");
+            }
+
             using (var memoryBuffer = new MemoryStream(buffer))
             {
                 using (var reader = new BinaryReader(memoryBuffer))
                 {
-                    var header = reader.ReadInt32();
-                    var data = reader.ReadBytes(IPAddress.NetworkToHostOrder(header));
-                    return new Packet(data);
+                    return reader.ReadBytes(length);
                 }
             }
+        }
+
+        public Packet Receive()
+        {
+            var dataLen = ReceiveHeader();
+            var data = ReceiveData(dataLen);
+            return new Packet(data);
         }
 
         public void Dispose()
