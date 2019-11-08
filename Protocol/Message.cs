@@ -26,6 +26,25 @@ namespace ViciNet.Protocol
         // End a previously started list
         protected const byte ListEnd = 6;
 
+        private static string MessageType(byte type)
+        {
+            switch (type)
+            {
+                case 1: return "section-start";
+                case 2: return "section-end";
+                case 3: return "key-value";
+                case 4: return "list-start";
+                case 5: return "list-item";
+                case 6: return "list-end";
+                default: return "undefined";
+            }
+        }
+
+        private static Exception MessageTypeException(byte type)
+        {
+            return new InvalidDataException($"MessageType: {type}(" + MessageType(type) + ')');
+        }
+
         public static Message[] Parse(byte[] data)
         {
             return ReadData(data, reader =>
@@ -75,7 +94,7 @@ namespace ViciNet.Protocol
                 case SectionStart:
                     return ReadSection(reader);
                 default:
-                    throw new InvalidDataException($"MessageType: {type}");
+                    throw MessageTypeException(type);
             }
         }
 
