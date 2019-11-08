@@ -51,6 +51,27 @@ namespace ViciNet
             _transport = new Transport(socket, endPoint);
         }
 
+        private static string PacketType(byte type)
+        {
+            switch (type)
+            {
+                case 0: return "command-request";
+                case 1: return "command-response";
+                case 2: return "event-unknown";
+                case 3: return "event-register";
+                case 4: return "event-unregister";
+                case 5: return "event-confirm";
+                case 6: return "event-unknown";
+                case 7: return "event";
+                default: return "undefined";
+            }
+        }
+
+        private static Exception PacketTypeException(byte packetType)
+        {
+            return new InvalidDataException($"packet-type:{packetType}" + '(' + PacketType(packetType) + ')');
+        }
+
         private Packet Communicate(Packet packet)
         {
             _transport.Send(packet);
@@ -62,14 +83,14 @@ namespace ViciNet
             var packet = new Packet(CmdRequest, command, messages);
             var response = Communicate(packet);
             var responseType = response.PacketType;
-            if (response.PacketType != CmdResponse)
+            if (responseType != CmdResponse)
             {
-                throw new InvalidDataException($"packetType: {responseType}");
+                throw PacketTypeException(responseType);
             }
 
             return response.Messages;
         }
-        
+
         private void RegisterEvent(string eventStreamType)
         {
             RegisterUnregister(eventStreamType, EventRegister);
@@ -84,15 +105,16 @@ namespace ViciNet
         {
             var packet = new Packet(registerType, eventStreamType);
             var response = Communicate(packet);
+            var packetType = response.PacketType;
 
-            if (response.PacketType == EventUnknown)
+            switch (packetType)
             {
-                throw new InvalidDataException();
-            }
-
-            if (response.PacketType != EventConfirm)
-            {
-                throw new InvalidDataException();
+                case EventUnknown:
+                    throw PacketTypeException(packetType);
+                case EventConfirm:
+                    return;
+                default:
+                    throw PacketTypeException(packetType);
             }
         }
 
@@ -105,22 +127,26 @@ namespace ViciNet
             while (true)
             {
                 var response = _transport.Receive();
-                if (response.PacketType != Event)
+                var packetType = response.PacketType;
+
+                var receivedMessages = response.Messages;
+                switch (packetType)
                 {
-                    UnregisterEvent(eventStreamType);
-                    if (response.PacketType != CmdResponse)
-                    {
-                        throw new InvalidDataException();
-                    }
+                    case CmdResponse:
+                        UnregisterEvent(eventStreamType);
+                        messagesList.Add(receivedMessages);
+                        return messagesList.ToArray();
+                    case Event:
+                        messagesList.Add(receivedMessages);
+                        break;
+                    default:
+                        UnregisterEvent(eventStreamType);
+                        throw PacketTypeException(packetType);
 
-                    messagesList.Add(response.Messages);
-                    return messagesList.ToArray();
                 }
-
-                messagesList.Add(response.Messages);
             }
         }
-        
+
         public Message[] Request(Command command, params Message[] messages)
         {
             return Request(command.GetName(), messages);
@@ -137,7 +163,7 @@ namespace ViciNet
                 ? StreamedRequest(command, streamEvent, messages)
                 : throw new ArgumentException($"\"{command.GetName()}\" isn't stream command.");
         }
-        
+
         private static readonly Dictionary<Command, StreamEvent> CommandToEventTable = new Dictionary<Command, StreamEvent>
         {
             {
