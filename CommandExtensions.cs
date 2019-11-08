@@ -12,11 +12,15 @@ namespace ViciNet
         // stats
         // reload-settings
 
+        /// <param name = "type">child | ike</param>
+        /// <param name = "name">configuration name</param>
         public static void Initiate(this Session session, string type, string name)
         {
             VoidCommandRequest(session, Command.Initiate, new KeyValueMessage(type, name));
         }
 
+        /// <param name = "type">child | ike</param>
+        /// <param name = "name">configuration name</param>
         public static Tuple<int, int> Terminate(this Session session, string type, string name)
         {
             return TypedCommandRequest(session, Command.Terminate, new[] { new KeyValueMessage(type, name) }, messages =>
@@ -67,16 +71,16 @@ namespace ViciNet
             VoidCommandRequest(session, Command.UnloadConn, new KeyValueMessage("name", name));
         }
 
-        // type: X509 | X509_AC | X509_CRL | OCSP_RESPONSE | PUBKEY | ANY
-        // flag: NONE | CA | AA | OCSP | ANY
-        // data: PEM or DER encoded key data
+        /// <param name = "type">X509 | X509_AC | X509_CRL</param>
+        /// <param name = "flag">NONE | CA | AA | OCSP</param>
+        /// <param name = "data">PEM or DER encoded key data</param>
         public static void LoadCert(this Session session, string type, string flag, string data)
         {
             VoidCommandRequest(session, Command.LoadCert, new KeyValueMessage("type", type), new KeyValueMessage("flag", flag), new KeyValueMessage("data", data));
         }
 
-        // type: rsa | ecdsa | bliss | any
-        // data: PEM or DER encoded key data
+        /// <param name = "type">rsa | ecdsa | bliss | any</param>
+        /// <param name = "data">PEM or DER encoded key data</param>
         public static string LoadKey(this Session session, string type, string data)
         {
             var typeMessage = new KeyValueMessage("type", type);
@@ -100,7 +104,7 @@ namespace ViciNet
         // unload-shared
         // get-shared
 
-        // type: X509 | X509_AC | X509_CRL | OCSP_RESPONSE | PUBKEY | ANY
+        /// <param name = "type">X509 | X509_AC | X509_CRL | OCSP_RESPONSE | PUBKEY | ANY</param>
         public static void FlushCerts(this Session session, string type)
         {
             VoidCommandRequest(session, Command.LoadCert, new KeyValueMessage("type", type));
