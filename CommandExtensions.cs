@@ -107,7 +107,7 @@ namespace ViciNet
         /// <param name = "type">X509 | X509_AC | X509_CRL | OCSP_RESPONSE | PUBKEY | ANY</param>
         public static void FlushCerts(this Session session, string type)
         {
-            VoidCommandRequest(session, Command.LoadCert, new KeyValueMessage("type", type));
+            VoidCommandRequest(session, Command.FlushCerts, new KeyValueMessage("type", type));
         }
 
         // clear-creds
