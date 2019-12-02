@@ -35,7 +35,17 @@ namespace ViciNet
         // redirect
         // install
         // uninstall
-        // list-sas
+
+        public static Message[][] ListSas(this Session session)
+        {
+            return session.StreamedRequest(Command.ListSas);
+        }
+
+        public static Message[][] ListSas(this Session session, string ike)
+        {
+            return session.StreamedRequest(Command.ListSas, new KeyValueMessage("ike", ike));
+        }
+
         // list-policies
 
         public static Message[][] ListConns(this Session session, string ike)
