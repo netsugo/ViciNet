@@ -235,8 +235,8 @@ namespace ViciNet.Protocol
 
     public class KeyArrayMessage : Message
     {
-        public string Key;
-        public string[] Values;
+        public string Key { get; }
+        public string[] Values { get; }
 
         public KeyArrayMessage(string key, params string[] values)
         {
@@ -284,13 +284,13 @@ namespace ViciNet.Protocol
 
     public class SectionMessage : Message
     {
-        private readonly string _key;
-        private readonly Message[] _messages;
+        public string Key { get; }
+        public Message[] Messages { get; }
 
         public SectionMessage(string key, params Message[] section)
         {
-            _key = key;
-            _messages = section;
+            Key = key;
+            Messages = section;
         }
 
         public override byte[] Encode()
@@ -298,8 +298,8 @@ namespace ViciNet.Protocol
             return Encode(SectionStart, writer =>
             {
                 // key length header: 1byte
-                WriteKey(writer, _key);
-                foreach (var message in _messages)
+                WriteKey(writer, Key);
+                foreach (var message in Messages)
                 {
                     // message type: 1byte
                     var encoded = message.Encode();
@@ -313,20 +313,20 @@ namespace ViciNet.Protocol
         public override string ToString()
         {
             string section;
-            switch (_messages.Length)
+            switch (Messages.Length)
             {
                 case 0:
                     section = null;
                     break;
                 case 1:
-                    section = _messages[0].ToString();
+                    section = Messages[0].ToString();
                     break;
                 default:
-                    section = _messages.Select(msg => msg.ToString()).Aggregate((m1, m2) => $"{m1},{m2}");
+                    section = Messages.Select(msg => msg.ToString()).Aggregate((m1, m2) => $"{m1},{m2}");
                     break;
             }
 
-            return $"\"{_key}\":{{{section}}}";
+            return $"\"{Key}\":{{{section}}}";
         }
     }
 }
