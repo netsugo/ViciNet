@@ -46,7 +46,13 @@ namespace ViciNet.Protocol
         {
             const int HEADER_SIZE = 4;
             var headerBuffer = new byte[HEADER_SIZE];
-            var result = _socket.Receive(headerBuffer, 0, HEADER_SIZE, SocketFlags.None);
+            var length = HEADER_SIZE;
+            var sum = 0;
+            while (sum < length)
+            {
+                var received = _socket.Receive(headerBuffer, sum, length - sum, SocketFlags.None);
+                sum += received;
+            }
 
             using (var memoryBuffer = new MemoryStream(headerBuffer))
             {
@@ -64,7 +70,8 @@ namespace ViciNet.Protocol
             var sum = 0;
             while (sum < length)
             {
-                sum += _socket.Receive(buffer, sum, length, SocketFlags.None);
+                var received = _socket.Receive(buffer, sum, length - sum, SocketFlags.None);
+                sum += received;
             }
 
             if (sum > length)
