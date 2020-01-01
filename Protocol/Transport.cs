@@ -30,16 +30,11 @@ namespace ViciNet.Protocol
         {
             var encoded = packet.Encode();
             var header = IPAddress.HostToNetworkOrder(encoded.Length);
-            using (var memoryBuffer = new MemoryStream())
+            return BinarySerde.Encode(writer =>
             {
-                using (var writer = new BinaryWriter(memoryBuffer))
-                {
-                    writer.Write(header);
-                    writer.Write(encoded);
-                }
-
-                return memoryBuffer.ToArray();
-            }
+                writer.Write(header);
+                writer.Write(encoded);
+            });
         }
 
         private int ReceiveHeader()
@@ -54,14 +49,11 @@ namespace ViciNet.Protocol
                 sum += received;
             }
 
-            using (var memoryBuffer = new MemoryStream(headerBuffer))
+            return BinarySerde.Parse(headerBuffer, reader =>
             {
-                using (var reader = new BinaryReader(memoryBuffer))
-                {
-                    var data = reader.ReadInt32();
-                    return IPAddress.NetworkToHostOrder(data);
-                }
-            }
+                var data = reader.ReadInt32();
+                return IPAddress.NetworkToHostOrder(data);
+            });
         }
 
         private byte[] ReceiveData(int length)
@@ -79,13 +71,10 @@ namespace ViciNet.Protocol
                 throw new InvalidDataException($"invalid size: {sum} (expected:{length})");
             }
 
-            using (var memoryBuffer = new MemoryStream(buffer))
+            return BinarySerde.Parse(buffer, reader =>
             {
-                using (var reader = new BinaryReader(memoryBuffer))
-                {
-                    return reader.ReadBytes(length);
-                }
-            }
+                return reader.ReadBytes(length);
+            });
         }
 
         public Packet Receive()
