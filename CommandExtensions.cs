@@ -36,21 +36,30 @@ namespace ViciNet
         // install
         // uninstall
 
-        public static Message[][] ListSas(this Session session)
+        public static IEnumerable<SectionMessage> ListSas(this Session session, string ike)
         {
-            return session.StreamedRequest(Command.ListSas);
+            var options = new List<KeyValueMessage>();
+            if (ike != null) options.Add(new KeyValueMessage("ike", ike));
+
+            return SectionMessages(session, Command.ListSas, options);
         }
 
-        public static Message[][] ListSas(this Session session, string ike)
+        public static IEnumerable<SectionMessage> ListPolicies(this Session session, bool drop, bool pass, bool trap, string child, string ike)
         {
-            return session.StreamedRequest(Command.ListSas, new KeyValueMessage("ike", ike));
+            var options = new List<KeyValueMessage>();
+            if (drop) options.Add(new KeyValueMessage("drop", "yes"));
+            if (pass) options.Add(new KeyValueMessage("pass", "yes"));
+            if (trap) options.Add(new KeyValueMessage("trap", "yes"));
+            if (child != null) options.Add(new KeyValueMessage("child", ike));
+            if (ike != null) options.Add(new KeyValueMessage("ike", ike));
+
+            return SectionMessages(session, Command.ListSas, options);
         }
 
-        // list-policies
-
-        public static Message[][] ListConns(this Session session, string ike)
+        public static IEnumerable<SectionMessage> ListConns(this Session session, string ike)
         {
-            return session.StreamedRequest(Command.ListConns, new KeyValueMessage("ike", ike));
+            var options = new List<Message> { new KeyValueMessage("ike", ike) };
+            return SectionMessages(session, Command.ListSas, options);
         }
 
         public static IEnumerable<string> GetConns(this Session session)
@@ -61,15 +70,20 @@ namespace ViciNet
         // type: X509 | X509_AC | X509_CRL | OCSP_RESPONSE | PUBKEY | ANY
         // flag: NONE | CA | AA | OCSP | ANY
         // subject: set to list only certificates having subject
-        public static Message[][] ListCerts(this Session session, string type, string flag, string subject = "")
+        public static IEnumerable<IEnumerable<KeyValueMessage>> ListCerts(this Session session, string type, string flag, string subject = "")
         {
             var typeMessage = new KeyValueMessage("type", type);
             var flagMessage = new KeyValueMessage("flag", flag);
             var subjectMessage = new KeyValueMessage("subject", subject);
-            return session.StreamedRequest(Command.ListCerts, typeMessage, flagMessage, subjectMessage);
+            return session.StreamedRequest(Command.ListCerts, typeMessage, flagMessage, subjectMessage)
+                .Select(messages => messages.Select(msg => msg as KeyValueMessage));
         }
 
-        // list-authorities
+        public static IEnumerable<SectionMessage> ListPolicies(this Session session, string name)
+        {
+            var options = new List<Message> { new KeyValueMessage("name", name) };
+            return SectionMessages(session, Command.ListAuthorities, options);
+        }
 
         public static void LoadConn(this Session session, Message config)
         {
@@ -129,6 +143,16 @@ namespace ViciNet
         // get-algorithms
         // get-counters
         // reset-counters
+
+        private static IEnumerable<SectionMessage> SectionMessages(Session session, Command command, IEnumerable<Message> options)
+        {
+            var list = new List<SectionMessage>();
+            foreach (var messages in session.StreamedRequest(command, options.ToArray()))
+            {
+                list.AddRange(messages.Select(msg => msg as SectionMessage));
+            }
+            return list;
+        }
 
         private static void VoidCommandRequest(Session session, Command command, params Message[] messages)
         {
