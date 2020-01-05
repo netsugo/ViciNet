@@ -3,7 +3,7 @@ using System.IO;
 
 namespace ViciNet.Protocol
 {
-    public class Packet : Encodable
+    public class Packet : IEncodable
     {
         private static readonly bool[] IsNamedList = { true, false, false, true, true, false, false, true };
 
@@ -23,10 +23,11 @@ namespace ViciNet.Protocol
             (PacketType, _name, Messages) = ReadPacket(data);
         }
 
-        public override byte[] Encode()
+        public byte[] Encode()
         {
-            return Encode(PacketType, writer =>
+            return BinarySerde.Encode(writer =>
             {
+                writer.Write(PacketType);
                 writer.Write(_name);
 
                 // ignored if Messages is empty
@@ -39,7 +40,7 @@ namespace ViciNet.Protocol
 
         private static Tuple<byte, string, Message[]> ReadPacket(byte[] data)
         {
-            return ReadData(data, reader =>
+            return BinarySerde.Parse(data, reader =>
             {
                 var packetType = reader.ReadByte();
                 var (name, nameLen) = IsNamedList[packetType]
